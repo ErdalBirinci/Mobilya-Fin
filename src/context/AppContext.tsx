@@ -44,7 +44,8 @@ const mockServices: Service[] = [
     collectionAmount: 0,
     notes: '2. kerros, ei hissiä. Kanna varovasti.',
     photos: [],
-    status: 'Planlandı',
+    status: 'Tamamlandı',
+    driverId: '2',
     date: new Date().toISOString().split('T')[0],
   },
   {
@@ -61,7 +62,8 @@ const mockServices: Service[] = [
     collectionAmount: 1250,
     notes: 'Asennus vaaditaan.',
     photos: [],
-    status: 'Yolda',
+    status: 'Tamamlandı',
+    driverId: '2',
     date: new Date().toISOString().split('T')[0],
   }
 ];

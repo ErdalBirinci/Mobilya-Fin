@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical, FileText, AlertTriangle, Save } from 'lucide-react';
+import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical, FileText, AlertTriangle, Save, MessageCircle } from 'lucide-react';
 import { Service, User } from '../types';
 import { cn } from '../lib/utils';
 import { compressImage } from '../utils/compressImage';
@@ -167,7 +167,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   {isMasked ? (
                     <span>{displayPhone}</span>
                   ) : (
-                    <a href={`tel:${service.customerPhone}`} className="hover:text-indigo-600 transition-colors">
+                    <a href={`https://wa.me/${service.customerPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="hover:text-indigo-600 transition-colors">
                       {displayPhone}
                     </a>
                   )}
@@ -206,7 +206,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 </div>
               )}
 
-              {(service.paymentMethod === 'Nakit' || service.paymentMethod === 'Kapıda Ödeme') && (
+              {service.paymentMethod === 'Nakit' && (
                 <div className="flex items-center justify-between text-red-700 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100">
                   <div className="flex items-center space-x-2">
                     <Banknote size={16} />
@@ -311,16 +311,30 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               </select>
             </div>
             
-            {service.receiptUrl && (
-              <a 
-                href={service.receiptUrl} 
-                download={`Teslimat_Fisi_${service.customerName.replace(/\s+/g, '_')}.pdf`}
-                className="flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
-              >
-                <FileText size={16} />
-                Teslimat Fişi PDF
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {service.status === 'Tamamlandı' && (
+                <a 
+                  href={`https://wa.me/?text=${encodeURIComponent(`Operasyon Sorumlusunun Dikkatine:\n${service.customerName} müşterisine ait ${service.type === 'ALIS' ? 'alış' : 'satış'} işlemi başarıyla tamamlanmıştır.\nAdres: ${service.customerAddress}\nTahsilat: ${service.collectionAmount} EUR (${service.paymentMethod})`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-sm font-bold text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+                  title="Operasyon Sorumlusuna WhatsApp ile Bildir"
+                >
+                  <MessageCircle size={16} />
+                  Operasyon Sorumlusuna Bildir
+                </a>
+              )}
+              {service.receiptUrl && (
+                <a 
+                  href={service.receiptUrl} 
+                  download={`Teslimat_Fisi_${service.customerName.replace(/\s+/g, '_')}.pdf`}
+                  className="flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                >
+                  <FileText size={16} />
+                  Teslimat Fişi PDF
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}

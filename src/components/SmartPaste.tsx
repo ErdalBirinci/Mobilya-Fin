@@ -25,13 +25,13 @@ export const SmartPaste: React.FC<SmartPasteProps> = ({ onDataExtracted, isAlis 
       const extractor = await pipeline('question-answering', 'Xenova/distilbert-base-cased-distilled-squad');
       
       setProgress('Adres analiz ediliyor...');
-      const addressResult = await extractor({ question: "What is the address or street or location?", context: text });
+      const addressResult = await extractor('What is the address or street or location?', text) as any;
       
       setProgress('Telefon analiz ediliyor...');
-      const phoneResult = await extractor({ question: "What is the phone number?", context: text });
+      const phoneResult = await extractor('What is the phone number?', text) as any;
       
       setProgress('Saat analiz ediliyor...');
-      const timeResult = await extractor({ question: "What is the time or hour?", context: text });
+      const timeResult = await extractor('What is the time or hour?', text) as any;
 
       // Güven skorlarına göre sonuçları filtreleme
       const extracted = {

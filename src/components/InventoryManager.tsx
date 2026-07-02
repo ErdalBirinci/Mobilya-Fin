@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Trash2, Edit2, X, Check, AlertTriangle, Download, QrCode } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, X, Check, AlertTriangle, Download, QrCode, Package, Truck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { InventoryItem, InventoryStatus } from '../types';
@@ -53,7 +53,7 @@ export const InventoryManager: React.FC = () => {
     filteredInventory.forEach(item => {
       rows.push([
         item.name,
-        item.quantity,
+        item.quantity.toString(),
         item.status
       ]);
     });
@@ -89,6 +89,43 @@ export const InventoryManager: React.FC = () => {
             <Plus size={18} />
             Yeni Ekle
           </button>
+        </div>
+      </div>
+
+      {/* Stok Durum Özeti */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-emerald-700 font-semibold text-sm mb-1">Hazır (Depo)</p>
+            <h3 className="text-3xl font-bold text-emerald-800">
+              {inventory.filter(i => i.status === 'Mevcut').reduce((acc, curr) => acc + curr.quantity, 0)}
+            </h3>
+          </div>
+          <div className="bg-emerald-200 p-3 rounded-xl text-emerald-700">
+            <Package size={24} />
+          </div>
+        </div>
+        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-indigo-700 font-semibold text-sm mb-1">Yolda (Kamyon)</p>
+            <h3 className="text-3xl font-bold text-indigo-800">
+              {inventory.filter(i => i.status === 'Kamyonda').reduce((acc, curr) => acc + curr.quantity, 0)}
+            </h3>
+          </div>
+          <div className="bg-indigo-200 p-3 rounded-xl text-indigo-700">
+            <Truck size={24} />
+          </div>
+        </div>
+        <div className="bg-teal-50 border border-teal-100 rounded-2xl p-6 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-teal-700 font-semibold text-sm mb-1">Teslim Edildi</p>
+            <h3 className="text-3xl font-bold text-teal-800">
+              {inventory.filter(i => i.status === 'Teslim Edildi').reduce((acc, curr) => acc + curr.quantity, 0)}
+            </h3>
+          </div>
+          <div className="bg-teal-200 p-3 rounded-xl text-teal-700">
+            <Check size={24} />
+          </div>
         </div>
       </div>
 
@@ -204,7 +241,9 @@ export const InventoryManager: React.FC = () => {
                   <td className="px-6 py-4 font-mono font-bold flex items-center gap-2">
                     {item.quantity} Adet
                     {item.quantity < 5 && (
-                      <AlertTriangle size={16} className="text-rose-500" title="Kritik Stok Seviyesi" />
+                      <div title="Kritik Stok Seviyesi">
+                        <AlertTriangle size={16} className="text-rose-500" />
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4">

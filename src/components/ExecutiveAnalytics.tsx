@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAppContext } from '../context/AppContext';
 import { TrendingUp, Activity, DollarSign, CheckCircle } from 'lucide-react';
+import { DriverProductivityChart } from './DriverProductivityChart';
 
 export const ExecutiveAnalytics: React.FC = () => {
   const { services } = useAppContext();
@@ -110,6 +111,8 @@ export const ExecutiveAnalytics: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <DriverProductivityChart />
     </div>
   );
 };

@@ -50,6 +50,7 @@ export interface Service {
   signatureUrl?: string; // Müşteri imzası
   receiptUrl?: string; // Teslimat fişi PDF
   fieldNote?: string; // Saha ve Park Notu
+  driverId?: string; // Atanan şoför
   status: ServiceStatus;
   date: string; // YYYY-MM-DD
 }

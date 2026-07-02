@@ -95,8 +95,8 @@ export const ServiceList: React.FC<ServiceListProps> = ({ date }) => {
         s.customerPhone,
         s.type === 'ALIS' ? 'Alış' : 'Satış',
         s.status,
-        s.totalAmount,
-        s.collectionAmount,
+        s.totalAmount.toString(),
+        s.collectionAmount.toString(),
         s.notes
       ]);
     });
