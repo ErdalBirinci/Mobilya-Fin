@@ -1,19 +1,47 @@
-const CACHE_NAME = 'mobilya-app-v1';
+const CACHE_NAME = 'mobilya-app-v2';
 const ASSETS_TO_CACHE = [
   '/',
-  '/index.html'
+  '/index.html',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+      );
+    })
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Only cache valid HTTP(S) responses
+        if (networkResponse.ok && event.request.url.startsWith('http')) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Ignore fetch errors during offline
+      });
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
@@ -42,6 +70,12 @@ async function syncServices() {
       const operations = request.result;
       if (operations && operations.length > 0) {
         console.log('Arka planda senkronizasyon başlatılıyor...', operations);
+        
+        // Saha ve Park Notu gibi spesifik işlemleri ayıralım
+        const fieldNotes = operations.filter(op => op.type === 'UPDATE_SERVICE' && op.updates && op.updates.fieldNote !== undefined);
+        if (fieldNotes.length > 0) {
+           console.log(`${fieldNotes.length} adet Saha ve Park Notu senkronize ediliyor...`);
+        }
         
         // Burada gerçek bir sunucu (Supabase/Firebase) API'si çağrılmalı.
         // Örn: await fetch('/api/sync', { method: 'POST', body: JSON.stringify(operations) });

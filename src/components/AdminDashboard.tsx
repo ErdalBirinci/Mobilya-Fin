@@ -7,10 +7,12 @@ import { NewServiceForm } from './NewServiceForm';
 import { Reporting } from './Reporting';
 import { AuditLogViewer } from './AuditLogViewer';
 import { ExecutiveAnalytics } from './ExecutiveAnalytics';
+import { AddressHistoryReport } from './AddressHistoryReport';
+import { MapPin } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { inventory } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS' | 'AUDIT_LOGS' | 'ANALYTICS'>('SERVICES');
+  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS' | 'AUDIT_LOGS' | 'ANALYTICS' | 'ADDRESS_HISTORY'>('SERVICES');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const hasCriticalStock = inventory.some((item) => item.quantity < 5);
@@ -59,6 +61,13 @@ export const AdminDashboard: React.FC = () => {
           <Shield size={18} />
           <span>Loglar</span>
         </button>
+        <button 
+          onClick={() => setActiveTab('ADDRESS_HISTORY')}
+          className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'ADDRESS_HISTORY' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+        >
+          <MapPin size={18} />
+          <span>Adres Geçmişi</span>
+        </button>
       </div>
 
       {activeTab === 'SERVICES' && (
@@ -99,6 +108,10 @@ export const AdminDashboard: React.FC = () => {
 
       {activeTab === 'AUDIT_LOGS' && (
         <AuditLogViewer />
+      )}
+
+      {activeTab === 'ADDRESS_HISTORY' && (
+        <AddressHistoryReport />
       )}
 
       {activeTab === 'NEW_SERVICE' && (
