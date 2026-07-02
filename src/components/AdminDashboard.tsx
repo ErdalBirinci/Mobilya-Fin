@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { Package, Truck, Search, Plus, BarChart2 } from 'lucide-react';
+import { Package, Truck, Search, Plus, BarChart2, Shield, AlertTriangle, PieChart } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { ServiceList } from './ServiceList';
 import { InventoryManager } from './InventoryManager';
 import { NewServiceForm } from './NewServiceForm';
 import { Reporting } from './Reporting';
+import { AuditLogViewer } from './AuditLogViewer';
+import { ExecutiveAnalytics } from './ExecutiveAnalytics';
 
 export const AdminDashboard: React.FC = () => {
   const { inventory } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS'>('SERVICES');
+  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS' | 'AUDIT_LOGS' | 'ANALYTICS'>('SERVICES');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
+  const hasCriticalStock = inventory.some((item) => item.quantity < 5);
+
   return (
-    <div className="max-w-4xl mx-auto pb-20">
+    <div className="max-w-5xl mx-auto pb-20">
       <div className="mb-8 flex space-x-2 bg-slate-100 p-1.5 rounded-xl overflow-x-auto">
         <button 
           onClick={() => setActiveTab('SERVICES')}
@@ -23,10 +27,16 @@ export const AdminDashboard: React.FC = () => {
         </button>
         <button 
           onClick={() => setActiveTab('INVENTORY')}
-          className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'INVENTORY' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+          className={`relative flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'INVENTORY' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
         >
           <Package size={18} />
           <span>Stok Durumu</span>
+          {hasCriticalStock && (
+            <span className="absolute top-2 right-2 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+          )}
         </button>
         <button 
           onClick={() => setActiveTab('REPORTS')}
@@ -34,6 +44,20 @@ export const AdminDashboard: React.FC = () => {
         >
           <BarChart2 size={18} />
           <span>Raporlar</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('ANALYTICS')}
+          className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'ANALYTICS' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+        >
+          <PieChart size={18} />
+          <span>Analitik</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('AUDIT_LOGS')}
+          className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'AUDIT_LOGS' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+        >
+          <Shield size={18} />
+          <span>Loglar</span>
         </button>
       </div>
 
@@ -67,6 +91,14 @@ export const AdminDashboard: React.FC = () => {
 
       {activeTab === 'REPORTS' && (
         <Reporting />
+      )}
+
+      {activeTab === 'ANALYTICS' && (
+        <ExecutiveAnalytics />
+      )}
+
+      {activeTab === 'AUDIT_LOGS' && (
+        <AuditLogViewer />
       )}
 
       {activeTab === 'NEW_SERVICE' && (

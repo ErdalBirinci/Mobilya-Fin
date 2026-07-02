@@ -3,7 +3,9 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { ServiceCard } from './ServiceCard';
 import { useAppContext } from '../context/AppContext';
 import { Service } from '../types';
-import { Filter } from 'lucide-react';
+import { Filter, Download } from 'lucide-react';
+import { exportToCsv } from '../utils/export';
+import { RouteOptimizer } from './RouteOptimizer';
 
 interface ServiceListProps {
   date: string;
@@ -81,43 +83,74 @@ export const ServiceList: React.FC<ServiceListProps> = ({ date }) => {
     updateService(id, { photos });
   };
 
+  const handleExportCsv = () => {
+    const rows = [
+      ['Tarih', 'Saat Aralığı', 'Müşteri Adı', 'Müşteri Telefon', 'Servis Tipi', 'Durum', 'Tutar', 'Tahsil Edilen', 'Notlar']
+    ];
+    filteredServices.forEach(s => {
+      rows.push([
+        s.date,
+        s.timeRange,
+        s.customerName,
+        s.customerPhone,
+        s.type === 'ALIS' ? 'Alış' : 'Satış',
+        s.status,
+        s.totalAmount,
+        s.collectionAmount,
+        s.notes
+      ]);
+    });
+    exportToCsv('servis_listesi.csv', rows);
+  };
+
   return (
     <div className="space-y-6">
       {currentUser.role === 'ADMIN' && (
-        <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 font-bold text-sm mr-2">
-            <Filter size={16} />
-            Filtreler:
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-slate-500 font-bold text-sm mr-2">
+              <Filter size={16} />
+              Filtreler:
+            </div>
+            <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+              <input 
+                type="checkbox" 
+                checked={hideAlis} 
+                onChange={(e) => setHideAlis(e.target.checked)}
+                className="rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm font-semibold text-slate-700">Alışları Gizle</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+              <input 
+                type="checkbox" 
+                checked={hideSatis} 
+                onChange={(e) => setHideSatis(e.target.checked)}
+                className="rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm font-semibold text-slate-700">Satışları Gizle</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+              <input 
+                type="checkbox" 
+                checked={hideCompleted} 
+                onChange={(e) => setHideCompleted(e.target.checked)}
+                className="rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm font-semibold text-slate-700">Tamamlananları Gizle</span>
+            </label>
           </div>
-          <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
-            <input 
-              type="checkbox" 
-              checked={hideAlis} 
-              onChange={(e) => setHideAlis(e.target.checked)}
-              className="rounded text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm font-semibold text-slate-700">Alışları Gizle</span>
-          </label>
-          <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
-            <input 
-              type="checkbox" 
-              checked={hideSatis} 
-              onChange={(e) => setHideSatis(e.target.checked)}
-              className="rounded text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm font-semibold text-slate-700">Satışları Gizle</span>
-          </label>
-          <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
-            <input 
-              type="checkbox" 
-              checked={hideCompleted} 
-              onChange={(e) => setHideCompleted(e.target.checked)}
-              className="rounded text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm font-semibold text-slate-700">Tamamlananları Gizle</span>
-          </label>
+          <button 
+            onClick={handleExportCsv}
+            className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-lg border border-indigo-100 font-semibold text-sm hover:bg-indigo-50 transition-colors shadow-sm"
+          >
+            <Download size={16} />
+            Dışa Aktar (CSV)
+          </button>
         </div>
       )}
+      
+      <RouteOptimizer services={filteredServices} />
 
       {filteredServices.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 shadow-sm">

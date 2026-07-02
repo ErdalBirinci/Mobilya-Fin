@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical, FileText, AlertTriangle, Save } from 'lucide-react';
 import { Service, User } from '../types';
 import { cn } from '../lib/utils';
 import { compressImage } from '../utils/compressImage';
 import { maskPhone, maskAddress, shouldMaskData } from '../utils/security';
+import { SignatureModal } from './SignatureModal';
+import { useAppContext } from '../context/AppContext';
 
 interface ServiceCardProps {
   service: Service;
@@ -20,9 +22,49 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onUploadPhotos,
   dragHandleProps,
 }) => {
+  const { services, updateService } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [fieldNoteInput, setFieldNoteInput] = useState(service.fieldNote || '');
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const isAlis = service.type === 'ALIS';
+
+  // Lojistik Hafızası: Geçmiş saha notlarını bul
+  const pastNoteService = services.find(s => 
+    s.id !== service.id && 
+    s.fieldNote && 
+    s.customerAddress && 
+    service.customerAddress &&
+    (
+      s.customerAddress.toLowerCase().includes(service.customerAddress.toLowerCase().substring(0, 10)) ||
+      service.customerAddress.toLowerCase().includes(s.customerAddress.toLowerCase().substring(0, 10))
+    )
+  );
+
+  const handleSaveFieldNote = () => {
+    setIsSavingNote(true);
+    updateService(service.id, { fieldNote: fieldNoteInput });
+    setTimeout(() => setIsSavingNote(false), 500); // UI feedback
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value as Service['status'];
+    if (newStatus === 'Tamamlandı') {
+      setShowSignatureModal(true);
+    } else {
+      onUpdateStatus(service.id, newStatus);
+    }
+  };
+
+  const handleSignatureComplete = (signatureUrl: string, receiptUrl: string) => {
+    updateService(service.id, {
+      status: 'Tamamlandı',
+      signatureUrl,
+      receiptUrl
+    });
+    setShowSignatureModal(false);
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -106,6 +148,17 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       {isExpanded && (
         <div className="border-t border-slate-100">
           <div className="p-5 flex-1">
+            {/* Lojistik Hafızası: Uyarı Balonu */}
+            {pastNoteService && (
+              <div className="mb-5 bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start space-x-3">
+                <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h4 className="text-sm font-bold text-amber-800">Lojistik Hafızası (Geçmiş Saha Notu)</h4>
+                  <p className="text-sm text-amber-700 mt-1 font-medium">{pastNoteService.fieldNote}</p>
+                </div>
+              </div>
+            )}
+
             {/* Müşteri Bilgileri */}
             <div className="mb-5">
               <div className="space-y-3 text-sm text-slate-600 font-medium">
@@ -172,6 +225,32 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               </div>
             )}
 
+            {/* Lojistik Hafızası - Saha Notu Girdisi */}
+            <div className="mb-5">
+              <label className="block text-sm font-bold text-slate-700 mb-2">Saha ve Park Notu</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={fieldNoteInput}
+                  onChange={(e) => setFieldNoteInput(e.target.value)}
+                  placeholder="Örn: Kamyoneti arka sokağa park edin..."
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
+                <button
+                  onClick={handleSaveFieldNote}
+                  disabled={isSavingNote || fieldNoteInput === service.fieldNote}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors",
+                    isSavingNote ? "bg-emerald-500 text-white" : 
+                    fieldNoteInput !== service.fieldNote ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400"
+                  )}
+                >
+                  <Save size={16} />
+                  {isSavingNote ? 'Kaydedildi' : 'Kaydet'}
+                </button>
+              </div>
+            </div>
+
             {/* Fotoğraflar */}
             <div className="mb-2">
               <div className="flex items-center justify-between mb-3">
@@ -209,28 +288,49 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           </div>
 
           {/* Aksiyonlar ve Durum */}
-          <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-            <label className="text-sm font-bold text-slate-600 mr-4">Durumu Güncelle:</label>
-            <select
-              value={service.status}
-              onChange={(e) => onUpdateStatus(service.id, e.target.value as Service['status'])}
-              className={cn(
-                "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm",
-                service.status === 'Planlandı' ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' :
-                service.status === 'Yolda' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' :
-                service.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200' :
-                service.status === 'İptal Edildi' ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' :
-                'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
-              )}
-            >
-              <option value="Planlandı">Planlandı</option>
-              <option value="Yolda">Yolda</option>
-              <option value="Tamamlandı">Tamamlandı</option>
-              <option value="Ertelendi">Ertelendi</option>
-              <option value="İptal Edildi">İptal Edildi</option>
-            </select>
+          <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center">
+              <label className="text-sm font-bold text-slate-600 mr-4">Durumu Güncelle:</label>
+              <select
+                value={service.status}
+                onChange={handleStatusChange}
+                className={cn(
+                  "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm",
+                  service.status === 'Planlandı' ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' :
+                  service.status === 'Yolda' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' :
+                  service.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200' :
+                  service.status === 'İptal Edildi' ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' :
+                  'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
+                )}
+              >
+                <option value="Planlandı">Planlandı</option>
+                <option value="Yolda">Yolda</option>
+                <option value="Tamamlandı">Tamamlandı</option>
+                <option value="Ertelendi">Ertelendi</option>
+                <option value="İptal Edildi">İptal Edildi</option>
+              </select>
+            </div>
+            
+            {service.receiptUrl && (
+              <a 
+                href={service.receiptUrl} 
+                download={`Teslimat_Fisi_${service.customerName.replace(/\s+/g, '_')}.pdf`}
+                className="flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
+              >
+                <FileText size={16} />
+                Teslimat Fişi PDF
+              </a>
+            )}
           </div>
         </div>
+      )}
+
+      {showSignatureModal && (
+        <SignatureModal 
+          service={service}
+          onClose={() => setShowSignatureModal(false)}
+          onComplete={handleSignatureComplete}
+        />
       )}
     </div>
   );

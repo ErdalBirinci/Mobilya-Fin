@@ -1,6 +1,18 @@
 export type Role = 'ADMIN' | 'DRIVER';
 
-export type InventoryStatus = 'Mevcut' | 'Tükendi' | 'Rezerve';
+export type InventoryStatus = 'Mevcut' | 'Tükendi' | 'Rezerve' | 'Kamyonda' | 'Teslim Edildi';
+
+export interface AuditLog {
+  id: string;
+  tenantId: string;
+  userId: string;
+  userName: string;
+  action: string;
+  entityType: 'SERVICE' | 'INVENTORY';
+  entityId: string;
+  details: string;
+  timestamp: string;
+}
 
 export interface Tenant {
   id: string;
@@ -35,6 +47,9 @@ export interface Service {
   collectionAmount: number; // Nakit/Kapıda ödeme ise Servis Elemanı görebilir
   notes: string;
   photos: string[]; // Base64 veya URL
+  signatureUrl?: string; // Müşteri imzası
+  receiptUrl?: string; // Teslimat fişi PDF
+  fieldNote?: string; // Saha ve Park Notu
   status: ServiceStatus;
   date: string; // YYYY-MM-DD
 }

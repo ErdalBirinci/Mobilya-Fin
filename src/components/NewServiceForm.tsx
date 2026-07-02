@@ -3,6 +3,7 @@ import { Camera, X, Check, MapPin, Phone, User as UserIcon, Clock, CreditCard, B
 import { useAppContext } from '../context/AppContext';
 import { ServiceType, PaymentMethod, Service } from '../types';
 import { compressImage } from '../utils/compressImage';
+import { SmartPaste } from './SmartPaste';
 
 interface NewServiceFormProps {
   onCancel: () => void;
@@ -114,6 +115,15 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
             Satış İşlemi
           </button>
         </div>
+
+        <SmartPaste 
+          isAlis={isAlis}
+          onDataExtracted={(data) => {
+            if (data.address) setCustomerAddress(data.address);
+            if (data.phone) setCustomerPhone(data.phone);
+            if (data.time) setTimeRange(data.time);
+          }}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Sol Kolon - Müşteri Bilgileri */}

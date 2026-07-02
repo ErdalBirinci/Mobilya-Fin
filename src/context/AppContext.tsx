@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import localforage from 'localforage';
-import { User, InventoryItem, Service, Role } from '../types';
+import { User, InventoryItem, Service, Role, AuditLog } from '../types';
+import { sendNotification } from '../utils/notifications';
 
 interface AppContextType {
   currentUser: User | null;
@@ -14,6 +15,7 @@ interface AppContextType {
   updateService: (id: string, updates: Partial<Service>) => void;
   deleteService: (id: string) => void;
   reorderServices: (reorderedServices: Service[]) => void;
+  auditLogs: AuditLog[];
   isOnline: boolean;
 }
 
@@ -70,6 +72,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   useEffect(() => {
@@ -87,12 +90,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const savedInventory = await localforage.getItem<InventoryItem[]>('inventory');
         const savedServices = await localforage.getItem<Service[]>('services');
+        const savedLogs = await localforage.getItem<AuditLog[]>('auditLogs');
         
         if (savedInventory) setInventory(savedInventory);
         else setInventory(mockInventory);
 
         if (savedServices) setServices(savedServices);
         else setServices(mockServices);
+
+        if (savedLogs) setAuditLogs(savedLogs);
       } catch (err) {
         console.error('Error loading from localforage', err);
       }
@@ -122,6 +128,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (services.length > 0) localforage.setItem('services', services);
   }, [services]);
+
+  useEffect(() => {
+    if (auditLogs.length > 0) localforage.setItem('auditLogs', auditLogs);
+  }, [auditLogs]);
+
+  const logAction = (action: string, entityType: 'SERVICE' | 'INVENTORY', entityId: string, details: string) => {
+    if (!currentUser) return;
+    const newLog: AuditLog = {
+      id: Math.random().toString(36).substr(2, 9),
+      tenantId: currentUser.tenantId,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      action,
+      entityType,
+      entityId,
+      details,
+      timestamp: new Date().toISOString()
+    };
+    setAuditLogs((prev) => [newLog, ...prev]);
+  };
 
   const queueOperation = async (operation: any) => {
     try {
@@ -164,16 +190,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newItem: InventoryItem = { ...item, id: Math.random().toString(36).substr(2, 9), tenantId: currentUser.tenantId };
     setInventory((prev) => [...prev, newItem]);
     if (!isOnline) queueOperation({ type: 'ADD_INVENTORY', payload: newItem });
+    logAction('ADD_INVENTORY', 'INVENTORY', newItem.id, `Added inventory: ${newItem.name}`);
   };
 
   const updateInventoryItem = (id: string, updates: Partial<InventoryItem>) => {
     setInventory((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
     if (!isOnline) queueOperation({ type: 'UPDATE_INVENTORY', id, updates });
+    logAction('UPDATE_INVENTORY', 'INVENTORY', id, `Updated inventory id: ${id}`);
   };
 
   const deleteInventoryItem = (id: string) => {
+    const item = inventory.find(i => i.id === id);
     setInventory((prev) => prev.filter((item) => item.id !== id));
     if (!isOnline) queueOperation({ type: 'DELETE_INVENTORY', id });
+    logAction('DELETE_INVENTORY', 'INVENTORY', id, `Deleted inventory: ${item?.name}`);
   };
 
   const addService = (service: Omit<Service, 'id' | 'tenantId'>) => {
@@ -181,16 +211,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newService: Service = { ...service, id: Math.random().toString(36).substr(2, 9), tenantId: currentUser.tenantId };
     setServices((prev) => [...prev, newService]);
     if (!isOnline) queueOperation({ type: 'ADD_SERVICE', payload: newService });
+
+    sendNotification('Yeni Servis Atandı', {
+      body: `${newService.customerName} - ${newService.type === 'ALIS' ? 'Alış' : 'Satış'} servisi planlandı.`,
+    });
+    logAction('ADD_SERVICE', 'SERVICE', newService.id, `Added service for ${newService.customerName}`);
   };
 
   const updateService = (id: string, updates: Partial<Service>) => {
     setServices((prev) => prev.map((service) => (service.id === id ? { ...service, ...updates } : service)));
     if (!isOnline) queueOperation({ type: 'UPDATE_SERVICE', id, updates });
+
+    if (updates.status === 'İptal Edildi') {
+      const service = services.find((s) => s.id === id);
+      if (service) {
+        sendNotification('Servis İptal Edildi', {
+          body: `${service.customerName} isimli müşterinin servisi iptal edildi.`,
+        });
+      }
+    }
+    logAction('UPDATE_SERVICE', 'SERVICE', id, `Updated service id: ${id}`);
   };
 
   const deleteService = (id: string) => {
+    const service = services.find(s => s.id === id);
     setServices((prev) => prev.filter((service) => service.id !== id));
     if (!isOnline) queueOperation({ type: 'DELETE_SERVICE', id });
+    logAction('DELETE_SERVICE', 'SERVICE', id, `Deleted service for ${service?.customerName}`);
   };
 
   const reorderServices = (reorderedServices: Service[]) => {
@@ -212,6 +259,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return inventory.filter(i => i.tenantId === currentUser.tenantId);
   }, [inventory, currentUser]);
 
+  const tenantLogs = React.useMemo(() => {
+    if (!currentUser) return [];
+    return auditLogs.filter(l => l.tenantId === currentUser.tenantId);
+  }, [auditLogs, currentUser]);
+
   return (
     <AppContext.Provider
       value={{
@@ -226,6 +278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateService,
         deleteService,
         reorderServices,
+        auditLogs: tenantLogs,
         isOnline,
       }}
     >
