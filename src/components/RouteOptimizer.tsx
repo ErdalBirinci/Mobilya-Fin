@@ -1,6 +1,7 @@
 import React from 'react';
 import { Map, Navigation } from 'lucide-react';
 import { Service } from '../types';
+import { RouteMap } from './RouteMap';
 
 interface RouteOptimizerProps {
   services: Service[];
@@ -37,23 +38,27 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services }) => {
   }
 
   return (
-    <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-          <Map size={20} />
+    <div className="mb-6">
+      <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+            <Map size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-800">Günün Rotası</h4>
+            <p className="text-xs text-slate-600 font-medium">Bekleyen {pendingServices.length} servis için rota ve süre tahmini alın.</p>
+          </div>
         </div>
-        <div>
-          <h4 className="text-sm font-bold text-slate-800">Günün Rotası</h4>
-          <p className="text-xs text-slate-600 font-medium">Bekleyen {pendingServices.length} servis için rota ve süre tahmini alın.</p>
-        </div>
+        <button 
+          onClick={handleOpenMaps}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+        >
+          <Navigation size={16} />
+          Haritalarda Aç
+        </button>
       </div>
-      <button 
-        onClick={handleOpenMaps}
-        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-      >
-        <Navigation size={16} />
-        Haritalarda Aç
-      </button>
+      
+      <RouteMap services={pendingServices} />
     </div>
   );
 };
