@@ -8,12 +8,19 @@ import { Reporting } from './Reporting';
 import { AuditLogViewer } from './AuditLogViewer';
 import { ExecutiveAnalytics } from './ExecutiveAnalytics';
 import { AddressHistoryReport } from './AddressHistoryReport';
+import { getLocalDateString } from '../utils/date';
 import { MapPin } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { inventory } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS' | 'AUDIT_LOGS' | 'ANALYTICS' | 'ADDRESS_HISTORY'>('SERVICES');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [activeTab, setActiveTab] = useState<'SERVICES' | 'INVENTORY' | 'NEW_SERVICE' | 'REPORTS' | 'AUDIT_LOGS' | 'ANALYTICS' | 'ADDRESS_HISTORY' | 'EDIT_SERVICE'>('SERVICES');
+  const [date, setDate] = useState<string>(getLocalDateString());
+  const [editingService, setEditingService] = useState<any>(null);
+
+  const handleEditService = (service: any) => {
+    setEditingService(service);
+    setActiveTab('EDIT_SERVICE');
+  };
 
   const hasCriticalStock = inventory.some((item) => item.quantity < 5);
 
@@ -82,7 +89,7 @@ export const AdminDashboard: React.FC = () => {
             />
           </div>
           
-          <ServiceList date={date} />
+          <ServiceList date={date} onEdit={handleEditService} />
           
           <button 
             onClick={() => setActiveTab('NEW_SERVICE')}
@@ -115,7 +122,18 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {activeTab === 'NEW_SERVICE' && (
-        <NewServiceForm onCancel={() => setActiveTab('SERVICES')} />
+        <NewServiceForm onCancel={() => setActiveTab('SERVICES')} onSubmitSuccess={(newDate) => { setDate(newDate); setActiveTab('SERVICES'); }} defaultDate={date} />
+      )}
+
+      {activeTab === 'EDIT_SERVICE' && editingService && (
+        <NewServiceForm 
+          onCancel={() => {
+            setActiveTab('SERVICES');
+            setEditingService(null);
+          }} 
+          onSubmitSuccess={(newDate) => { setDate(newDate); setActiveTab('SERVICES'); setEditingService(null); }}
+          initialData={editingService} 
+        />
       )}
     </div>
   );

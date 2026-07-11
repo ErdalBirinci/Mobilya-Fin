@@ -9,9 +9,10 @@ import { RouteOptimizer } from './RouteOptimizer';
 
 interface ServiceListProps {
   date: string;
+  onEdit?: (service: Service) => void;
 }
 
-export const ServiceList: React.FC<ServiceListProps> = ({ date }) => {
+export const ServiceList: React.FC<ServiceListProps> = ({ date, onEdit }) => {
   const { services, currentUser, reorderServices, updateService } = useAppContext();
   
   const [hideAlis, setHideAlis] = useState(false);
@@ -178,6 +179,7 @@ export const ServiceList: React.FC<ServiceListProps> = ({ date }) => {
                             currentUser={currentUser}
                             onUpdateStatus={handleUpdateStatus}
                             onUploadPhotos={handleUploadPhotos}
+                            onEdit={onEdit}
                             dragHandleProps={provided.dragHandleProps}
                           />
                         </div>

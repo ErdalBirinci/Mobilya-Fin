@@ -3,27 +3,32 @@ import { Camera, X, Check, MapPin, Phone, User as UserIcon, Clock, CreditCard, B
 import { useAppContext } from '../context/AppContext';
 import { ServiceType, PaymentMethod, Service } from '../types';
 import { compressImage } from '../utils/compressImage';
-import { SmartPaste } from './SmartPaste';
+import { ImageModal } from './ImageModal';
+import { getLocalDateString } from '../utils/date';
 
 interface NewServiceFormProps {
+  onSubmitSuccess?: (date: string) => void;
   onCancel: () => void;
+  initialData?: Service;
+  defaultDate?: string;
 }
 
-export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
-  const { addService } = useAppContext();
+export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel, onSubmitSuccess, initialData, defaultDate }) => {
+  const { addService, updateService } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [type, setType] = useState<ServiceType>('ALIS');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerAddress, setCustomerAddress] = useState('');
-  const [timeRange, setTimeRange] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Nakit');
-  const [totalAmount, setTotalAmount] = useState<number>(0);
-  const [collectionAmount, setCollectionAmount] = useState<number>(0);
-  const [notes, setNotes] = useState('');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [type, setType] = useState<ServiceType>(initialData?.type || 'ALIS');
+  const [customerName, setCustomerName] = useState(initialData?.customerName || '');
+  const [customerPhone, setCustomerPhone] = useState(initialData?.customerPhone || '');
+  const [customerAddress, setCustomerAddress] = useState(initialData?.customerAddress || '');
+  const [timeRange, setTimeRange] = useState(initialData?.timeRange || '');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.paymentMethod || 'Nakit');
+  const [totalAmount, setTotalAmount] = useState<number>(initialData?.totalAmount || 0);
+  const [collectionAmount, setCollectionAmount] = useState<number>(initialData?.collectionAmount || 0);
+  const [notes, setNotes] = useState(initialData?.notes || '');
+  const [date, setDate] = useState<string>(initialData?.date || defaultDate || getLocalDateString());
+  const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAlis = type === 'ALIS';
@@ -56,10 +61,9 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const newService: Omit<Service, 'id' | 'tenantId'> = {
+    const serviceData = {
       type,
       timeRange,
-      orderIndex: 999, // sona eklenecek
       customerName,
       customerPhone,
       customerAddress,
@@ -68,22 +72,26 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
       collectionAmount,
       notes,
       photos,
-      status: 'Planlandı',
       date,
     };
 
-    // Simulate DB delay
-    setTimeout(() => {
-      addService(newService);
-      setIsSubmitting(false);
-      onCancel();
-    }, 500);
+    if (initialData) {
+      updateService(initialData.id, serviceData);
+    } else {
+      addService({
+        ...serviceData,
+        orderIndex: 999, // sona eklenecek
+        status: 'Planlandı',
+      });
+    }
+    setIsSubmitting(false);
+    if (onSubmitSuccess) onSubmitSuccess(date); else onCancel();
   };
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
       <div className={`px-8 py-6 border-b flex items-center justify-between ${isAlis ? 'border-emerald-100 bg-emerald-50/50' : 'border-indigo-100 bg-indigo-50/50'}`}>
-        <h2 className={`text-2xl font-bold ${isAlis ? 'text-emerald-900' : 'text-indigo-900'}`}>Yeni Servis Kaydı</h2>
+        <h2 className={`text-2xl font-bold ${isAlis ? 'text-emerald-900' : 'text-indigo-900'}`}>{initialData ? 'Servisi Düzenle' : 'Yeni Servis Kaydı'}</h2>
         <button onClick={onCancel} className={`p-2 rounded-xl transition-colors ${isAlis ? 'text-emerald-500 hover:bg-emerald-100' : 'text-indigo-500 hover:bg-indigo-100'}`}>
           <X size={24} />
         </button>
@@ -115,15 +123,6 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
             Satış İşlemi
           </button>
         </div>
-
-        <SmartPaste 
-          isAlis={isAlis}
-          onDataExtracted={(data) => {
-            if (data.address) setCustomerAddress(data.address);
-            if (data.phone) setCustomerPhone(data.phone);
-            if (data.time) setTimeRange(data.time);
-          }}
-        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Sol Kolon - Müşteri Bilgileri */}
@@ -249,6 +248,7 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
                   Tahsil Edilecek (€)
                 </label>
                 <input
+                  required
                   type="number"
                   min="0"
                   value={collectionAmount || ''}
@@ -308,7 +308,8 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
                     <img 
                       src={photo} 
                       alt={`Servis fotoğrafı ${idx + 1}`} 
-                      className="w-full h-full object-cover rounded-xl border border-slate-200 shadow-sm" 
+                      className="w-full h-full object-cover rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
+                      onClick={() => setSelectedImage(photo)}
                     />
                     <button
                       type="button"
@@ -350,10 +351,15 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel }) => {
             }`}
           >
             <Check size={18} />
-            <span>{isSubmitting ? 'Kaydediliyor...' : 'Servis Kaydını Oluştur'}</span>
+            <span>{isSubmitting ? 'Kaydediliyor...' : (initialData ? 'Değişiklikleri Kaydet' : 'Servis Kaydını Oluştur')}</span>
           </button>
         </div>
       </form>
+
+      <ImageModal 
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
     </div>
   );
 };

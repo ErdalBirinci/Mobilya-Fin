@@ -211,7 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addService = (service: Omit<Service, 'id' | 'tenantId'>) => {
     if (!currentUser) return;
     const newService: Service = { ...service, id: Math.random().toString(36).substr(2, 9), tenantId: currentUser.tenantId };
-    setServices((prev) => [...prev, newService]);
+    console.log("Adding service:", newService); setServices((prev) => [...prev, newService]);
     if (!isOnline) queueOperation({ type: 'ADD_SERVICE', payload: newService });
 
     sendNotification('Yeni Servis Atandı', {

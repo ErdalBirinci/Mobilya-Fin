@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical, FileText, AlertTriangle, Save, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Clock, CreditCard, Banknote, Camera, ChevronDown, ChevronUp, GripVertical, FileText, AlertTriangle, Save, MessageCircle, Edit } from 'lucide-react';
 import { Service, User } from '../types';
 import { cn } from '../lib/utils';
 import { compressImage } from '../utils/compressImage';
 import { maskPhone, maskAddress, shouldMaskData } from '../utils/security';
 import { SignatureModal } from './SignatureModal';
+import { ImageModal } from './ImageModal';
 import { useAppContext } from '../context/AppContext';
 
 interface ServiceCardProps {
@@ -12,6 +13,7 @@ interface ServiceCardProps {
   currentUser: User;
   onUpdateStatus: (id: string, status: Service['status']) => void;
   onUploadPhotos: (id: string, newPhotos: string[]) => void;
+  onEdit?: (service: Service) => void;
   dragHandleProps?: any;
 }
 
@@ -20,12 +22,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   currentUser,
   onUpdateStatus,
   onUploadPhotos,
+  onEdit,
   dragHandleProps,
 }) => {
   const { services, updateService } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [fieldNoteInput, setFieldNoteInput] = useState(service.fieldNote || '');
   const [isSavingNote, setIsSavingNote] = useState(false);
   const isAlis = service.type === 'ALIS';
@@ -279,7 +283,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                       key={idx} 
                       src={photo} 
                       alt={`Servis fotoğrafı ${idx + 1}`} 
-                      className="h-20 w-20 object-cover rounded-xl border border-slate-200 shrink-0 shadow-sm" 
+                      className="h-20 w-20 object-cover rounded-xl border border-slate-200 shrink-0 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
+                      onClick={() => setSelectedImage(photo)}
                     />
                   ))}
                 </div>
@@ -289,26 +294,40 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
           {/* Aksiyonlar ve Durum */}
           <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center">
-              <label className="text-sm font-bold text-slate-600 mr-4">Durumu Güncelle:</label>
-              <select
-                value={service.status}
-                onChange={handleStatusChange}
-                className={cn(
-                  "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm",
-                  service.status === 'Planlandı' ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' :
-                  service.status === 'Yolda' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' :
-                  service.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200' :
-                  service.status === 'İptal Edildi' ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' :
-                  'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
-                )}
-              >
-                <option value="Planlandı">Planlandı</option>
-                <option value="Yolda">Yolda</option>
-                <option value="Tamamlandı">Tamamlandı</option>
-                <option value="Ertelendi">Ertelendi</option>
-                <option value="İptal Edildi">İptal Edildi</option>
-              </select>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <label className="text-sm font-bold text-slate-600 mr-4">Durumu Güncelle:</label>
+                <select
+                  value={service.status}
+                  onChange={handleStatusChange}
+                  className={cn(
+                    "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm",
+                    service.status === 'Planlandı' ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' :
+                    service.status === 'Yolda' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' :
+                    service.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200' :
+                    service.status === 'İptal Edildi' ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' :
+                    'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
+                  )}
+                >
+                  <option value="Planlandı">Planlandı</option>
+                  <option value="Yolda">Yolda</option>
+                  <option value="Tamamlandı">Tamamlandı</option>
+                  <option value="Ertelendi">Ertelendi</option>
+                  <option value="İptal Edildi">İptal Edildi</option>
+                </select>
+              </div>
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(service);
+                  }}
+                  className="flex items-center gap-1.5 text-sm font-bold text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  <Edit size={16} />
+                  Düzenle
+                </button>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -346,6 +365,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           onComplete={handleSignatureComplete}
         />
       )}
+
+      <ImageModal 
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
     </div>
   );
 };
