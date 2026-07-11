@@ -1,6 +1,6 @@
 {
   "name": "Mobilya Servis & Operasyon",
   "description": "İkinci el mobilya mağazası operasyon ve saha servis yönetim sistemi.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

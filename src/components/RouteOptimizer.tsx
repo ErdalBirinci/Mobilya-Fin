@@ -18,11 +18,27 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
   // Sadece tamamlanmamış ve adresi olan servisleri al
   const pendingServices = services.filter(s => s.status !== 'Tamamlandı' && s.status !== 'İptal Edildi' && s.customerAddress);
 
-  const handleOptimizeRoute = async () => {
+  const handleOptimizeRoute = async (useCurrentLocation = false) => {
     if (pendingServices.length < 2) return;
     setIsCalculating(true);
     
     try {
+      let startCoords = null;
+      if (useCurrentLocation && navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000
+            });
+          });
+          startCoords = [pos.coords.latitude, pos.coords.longitude];
+        } catch (err) {
+          console.warn("Konum alınamadı:", err);
+          alert("Konum alınamadı. Rotadaki ilk noktadan başlanacak.");
+        }
+      }
+
       // 1. Koordinatları al
       const points = [];
       for (const s of pendingServices) {
@@ -50,9 +66,27 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
       
       const ordered = [];
       if (withCoords.length > 0) {
-        // İlk noktadan başla
-        let current = withCoords.shift();
-        ordered.push(current.service);
+        let current = null;
+        if (startCoords) {
+          let nearestIdx = 0;
+          let minDistance = Infinity;
+          for (let i = 0; i < withCoords.length; i++) {
+            const dist = calculateDistance(
+              startCoords[0], startCoords[1],
+              withCoords[i].coords[0], withCoords[i].coords[1]
+            );
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestIdx = i;
+            }
+          }
+          current = withCoords.splice(nearestIdx, 1)[0];
+          ordered.push(current.service);
+        } else {
+          // İlk noktadan başla
+          current = withCoords.shift();
+          ordered.push(current.service);
+        }
         
         while (withCoords.length > 0) {
           let nearestIdx = 0;
@@ -145,21 +179,29 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
             <p className="text-xs text-slate-600 font-medium">Bekleyen {pendingServices.length} servis için rota ve süre tahmini alın.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button 
-            onClick={handleOptimizeRoute}
+            onClick={() => handleOptimizeRoute(true)}
             disabled={isCalculating || pendingServices.length < 2}
-            className="flex items-center gap-2 bg-white text-indigo-700 px-4 py-2 rounded-xl border border-indigo-200 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-white text-emerald-600 px-3 py-2 rounded-xl border border-emerald-200 text-sm font-bold hover:bg-emerald-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            title="Mevcut konumuma en yakın noktadan başlayarak rotayı oluşturur"
+          >
+            {isCalculating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
+            Konumuma Göre Sırala
+          </button>
+          <button 
+            onClick={() => handleOptimizeRoute(false)}
+            disabled={isCalculating || pendingServices.length < 2}
+            className="flex items-center gap-2 bg-white text-indigo-700 px-3 py-2 rounded-xl border border-indigo-200 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isCalculating ? <Loader2 size={16} className="animate-spin" /> : <RouteIcon size={16} />}
-            {isCalculating ? 'Hesaplanıyor...' : 'Rotayı Hesapla'}
+            Optimum Rota
           </button>
           <button 
             onClick={handleOpenMaps}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
           >
-            <Navigation size={16} />
-            Haritalarda Aç
+            Haritada Aç
           </button>
         </div>
       </div>

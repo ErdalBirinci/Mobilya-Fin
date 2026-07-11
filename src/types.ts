@@ -19,12 +19,15 @@ export interface Tenant {
   name: string;
 }
 
+export type ItemCondition = 'Temiz' | 'Kusurlu' | 'Elden Çıkarılacak';
+
 export interface InventoryItem {
   id: string;
   tenantId: string;
   name: string;
   quantity: number;
   status: InventoryStatus;
+  condition?: ItemCondition;
 }
 
 export type ServiceType = 'ALIS' | 'SATIS';

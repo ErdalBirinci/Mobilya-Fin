@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Trash2, Edit2, X, Check, AlertTriangle, Download, QrCode, Package, Truck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
-import { InventoryItem, InventoryStatus } from '../types';
+import { InventoryItem, InventoryStatus, ItemCondition } from '../types';
 import { exportToCsv } from '../utils/export';
 
 export const InventoryManager: React.FC = () => {
@@ -16,15 +16,18 @@ export const InventoryManager: React.FC = () => {
     name: '',
     quantity: 0,
     status: 'Vitrinde',
+    condition: 'Temiz',
   });
 
   const [editItem, setEditItem] = useState<Partial<InventoryItem>>({});
   const [statusFilter, setStatusFilter] = useState<InventoryStatus | 'Tümü'>('Tümü');
+  const [conditionFilter, setConditionFilter] = useState<ItemCondition | 'Tümü'>('Tümü');
 
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'Tümü' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCondition = conditionFilter === 'Tümü' || (item.condition || 'Temiz') === conditionFilter;
+    return matchesSearch && matchesStatus && matchesCondition;
   });
 
   const handleAdd = () => {
@@ -33,9 +36,10 @@ export const InventoryManager: React.FC = () => {
       name: newItem.name,
       quantity: Number(newItem.quantity),
       status: newItem.status,
+      condition: newItem.condition,
     });
     setIsAdding(false);
-    setNewItem({ name: '', quantity: 0, status: 'Vitrinde' });
+    setNewItem({ name: '', quantity: 0, status: 'Vitrinde', condition: 'Temiz' });
   };
 
   const handleUpdate = () => {
@@ -51,13 +55,14 @@ export const InventoryManager: React.FC = () => {
 
   const handleExportCsv = () => {
     const rows = [
-      ['Ürün Adı', 'Stok Miktarı', 'Durum']
+      ['Ürün Adı', 'Stok Miktarı', 'Durum', 'Fiziksel Durum']
     ];
     filteredInventory.forEach(item => {
       rows.push([
         item.name,
         item.quantity.toString(),
-        item.status
+        item.status,
+        item.condition || 'Temiz'
       ]);
     });
     exportToCsv('stok_listesi.csv', rows);
@@ -89,6 +94,16 @@ export const InventoryManager: React.FC = () => {
             <option value="Rezerve">Rezerve</option>
             <option value="Kamyonda">Kamyonda</option>
             <option value="Teslim Edildi">Teslim Edildi</option>
+          </select>
+          <select
+            value={conditionFilter}
+            onChange={(e) => setConditionFilter(e.target.value as any)}
+            className="px-4 py-2 bg-slate-100 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-700 cursor-pointer"
+          >
+            <option value="Tümü">Tüm Fiziksel Durumlar</option>
+            <option value="Temiz">Temiz</option>
+            <option value="Kusurlu">Kusurlu</option>
+            <option value="Elden Çıkarılacak">Elden Çıkarılacak</option>
           </select>
           <button 
             onClick={handleExportCsv}
@@ -148,9 +163,10 @@ export const InventoryManager: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-600">
           <thead className="bg-slate-50 border-b border-slate-50 text-slate-400 text-xs uppercase tracking-wider">
             <tr>
-              <th className="px-6 py-4 font-semibold w-1/2">Ürün Adı</th>
-              <th className="px-6 py-4 font-semibold w-1/4">Stok</th>
-              <th className="px-6 py-4 font-semibold w-1/4">Durum</th>
+              <th className="px-6 py-4 font-semibold w-1/3">Ürün Adı</th>
+              <th className="px-6 py-4 font-semibold w-1/6">Stok</th>
+              <th className="px-6 py-4 font-semibold w-1/6">Durum</th>
+              <th className="px-6 py-4 font-semibold w-1/6">Fiziksel Durum</th>
               <th className="px-6 py-4 font-semibold text-right">İşlem</th>
             </tr>
           </thead>
@@ -179,13 +195,24 @@ export const InventoryManager: React.FC = () => {
                   <select
                     value={newItem.status}
                     onChange={(e) => setNewItem({ ...newItem, status: e.target.value as InventoryStatus })}
-                    className="bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
                     <option value="Vitrinde">Vitrinde</option>
                     <option value="Satıldı">Satıldı</option>
                     <option value="Rezerve">Rezerve</option>
                     <option value="Kamyonda">Kamyonda</option>
                     <option value="Teslim Edildi">Teslim Edildi</option>
+                  </select>
+                </td>
+                <td className="px-6 py-3">
+                  <select
+                    value={newItem.condition}
+                    onChange={(e) => setNewItem({ ...newItem, condition: e.target.value as ItemCondition })}
+                    className="w-full bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    <option value="Temiz">Temiz</option>
+                    <option value="Kusurlu">Kusurlu</option>
+                    <option value="Elden Çıkarılacak">Elden Çıkarılacak</option>
                   </select>
                 </td>
                 <td className="px-6 py-3 text-right">
@@ -227,13 +254,24 @@ export const InventoryManager: React.FC = () => {
                       <select
                         value={editItem.status || 'Vitrinde'}
                         onChange={(e) => setEditItem({ ...editItem, status: e.target.value as InventoryStatus })}
-                        className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                       >
                         <option value="Vitrinde">Vitrinde</option>
                         <option value="Satıldı">Satıldı</option>
                         <option value="Rezerve">Rezerve</option>
                         <option value="Kamyonda">Kamyonda</option>
                         <option value="Teslim Edildi">Teslim Edildi</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-3">
+                      <select
+                        value={editItem.condition || 'Temiz'}
+                        onChange={(e) => setEditItem({ ...editItem, condition: e.target.value as ItemCondition })}
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      >
+                        <option value="Temiz">Temiz</option>
+                        <option value="Kusurlu">Kusurlu</option>
+                        <option value="Elden Çıkarılacak">Elden Çıkarılacak</option>
                       </select>
                     </td>
                     <td className="px-6 py-3 text-right">
@@ -276,6 +314,19 @@ export const InventoryManager: React.FC = () => {
                       }`}
                     >
                       {item.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold ${
+                        item.condition === 'Kusurlu'
+                          ? 'bg-orange-100 text-orange-700'
+                          : item.condition === 'Elden Çıkarılacak'
+                          ? 'bg-slate-200 text-slate-700'
+                          : 'bg-sky-100 text-sky-700'
+                      }`}
+                    >
+                      {item.condition || 'Temiz'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
