@@ -224,6 +224,7 @@ export const NewServiceForm: React.FC<NewServiceFormProps> = ({ onCancel, onSubm
                 <option value="Web Satış">Web Satış</option>
                 <option value="Mobilpay">Mobilpay</option>
                 <option value="Fatura">Fatura</option>
+                <option value="Ücretsiz">Ücretsiz</option>
               </select>
             </div>
 

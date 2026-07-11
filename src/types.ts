@@ -29,7 +29,7 @@ export interface InventoryItem {
 
 export type ServiceType = 'ALIS' | 'SATIS';
 
-export type PaymentMethod = 'Nakit' | 'Kredi Kartı' | 'Havale/EFT' | 'Web Satış' | 'Mobilpay' | 'Fatura';
+export type PaymentMethod = 'Nakit' | 'Kredi Kartı' | 'Havale/EFT' | 'Web Satış' | 'Mobilpay' | 'Fatura' | 'Ücretsiz';
 
 export type ServiceStatus = 'Planlandı' | 'Yolda' | 'Tamamlandı' | 'İptal Edildi' | 'Ertelendi';
 
