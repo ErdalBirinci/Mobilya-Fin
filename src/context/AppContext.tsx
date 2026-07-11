@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import localforage from 'localforage';
-import { User, InventoryItem, Service, Role, AuditLog } from '../types';
+import { User, InventoryItem, Service, Role, AuditLog, AppNotification } from '../types';
 import { sendNotification } from '../utils/notifications';
 
 interface AppContextType {
@@ -17,6 +17,10 @@ interface AppContextType {
   reorderServices: (reorderedServices: Service[]) => void;
   auditLogs: AuditLog[];
   isOnline: boolean;
+  notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'tenantId' | 'createdAt'>) => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
 }
 
 const mockUsers: User[] = [
@@ -25,8 +29,8 @@ const mockUsers: User[] = [
 ];
 
 const mockInventory: InventoryItem[] = [
-  { id: '1', tenantId: 'tenant-1', name: 'L Köşe Koltuk', quantity: 2, status: 'Mevcut' },
-  { id: '2', tenantId: 'tenant-1', name: 'Ahşap Yemek Masası', quantity: 0, status: 'Tükendi' },
+  { id: '1', tenantId: 'tenant-1', name: 'L Köşe Koltuk', quantity: 2, status: 'Vitrinde' },
+  { id: '2', tenantId: 'tenant-1', name: 'Ahşap Yemek Masası', quantity: 0, status: 'Satıldı' },
 ];
 
 const mockServices: Service[] = [
@@ -75,6 +79,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   useEffect(() => {
@@ -217,6 +222,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sendNotification('Yeni Servis Atandı', {
       body: `${newService.customerName} - ${newService.type === 'ALIS' ? 'Alış' : 'Satış'} servisi planlandı.`,
     });
+    addNotification({
+      title: 'Yeni Görev Atandı',
+      message: `${newService.customerName} için yeni bir ${newService.type === 'ALIS' ? 'Alış' : 'Satış'} görevi oluşturuldu.`,
+      type: 'INFO',
+      read: false
+    });
     logAction('ADD_SERVICE', 'SERVICE', newService.id, `Added service for ${newService.customerName}`);
   };
 
@@ -242,14 +253,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logAction('DELETE_SERVICE', 'SERVICE', id, `Deleted service for ${service?.customerName}`);
   };
 
+  const addNotification = (notif: Omit<AppNotification, 'id' | 'tenantId' | 'createdAt'>) => {
+    if (!currentUser) return;
+    const newNotif: AppNotification = {
+      ...notif,
+      id: Math.random().toString(36).substr(2, 9),
+      tenantId: currentUser.tenantId,
+      createdAt: new Date().toISOString()
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   const reorderServices = (reorderedServices: Service[]) => {
     if (!currentUser) return;
     setServices((prev) => {
       const otherTenants = prev.filter(s => s.tenantId !== currentUser.tenantId);
       return [...otherTenants, ...reorderedServices];
     });
+    addNotification({
+      title: 'Rota Değiştirildi',
+      message: 'Görev sırası ve rota güncellendi. Yeni rotayı kontrol edin.',
+      type: 'WARNING',
+      read: false
+    });
     if (!isOnline) queueOperation({ type: 'REORDER_SERVICES', payload: reorderedServices });
   };
+
+  const tenantNotifications = React.useMemo(() => {
+    if (!currentUser) return [];
+    return notifications.filter((n) => n.tenantId === currentUser.tenantId && (!n.userId || n.userId === currentUser.id));
+  }, [notifications, currentUser]);
 
   const tenantServices = React.useMemo(() => {
     if (!currentUser) return [];
@@ -282,6 +323,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reorderServices,
         auditLogs: tenantLogs,
         isOnline,
+        notifications: tenantNotifications,
+        addNotification,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

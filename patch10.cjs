@@ -1,5 +1,16 @@
-import React from 'react';
-import { Map, Navigation, Route as RouteIcon, Loader2 } from 'lucide-react';
+const fs = require('fs');
+let file = 'src/components/RouteOptimizer.tsx';
+let content = fs.readFileSync(file, 'utf8');
+
+const target1 = `import { Map, Navigation } from 'lucide-react';
+import { Service } from '../types';
+import { RouteMap } from './RouteMap';
+
+interface RouteOptimizerProps {
+  services: Service[];
+}`;
+
+const rep1 = `import { Map, Navigation, Route as RouteIcon, Loader2 } from 'lucide-react';
 import { Service } from '../types';
 import { RouteMap } from './RouteMap';
 import { geocodeAddress, calculateDistance } from '../utils/geocoding';
@@ -9,9 +20,17 @@ import { useAppContext } from '../context/AppContext';
 interface RouteOptimizerProps {
   services: Service[];
   onRouteOptimized?: () => void;
-}
+}`;
 
-export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRouteOptimized }) => {
+content = content.replace(target1, rep1);
+
+const target2 = `export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services }) => {
+  // Sadece tamamlanmamış ve adresi olan servisleri al
+  const pendingServices = services.filter(s => s.status !== 'Tamamlandı' && s.status !== 'İptal Edildi' && s.customerAddress);
+
+  const handleOpenMaps = () => {`;
+
+const rep2 = `export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRouteOptimized }) => {
   const { services: allServices, reorderServices } = useAppContext();
   const [isCalculating, setIsCalculating] = useState(false);
   
@@ -26,7 +45,7 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
       // 1. Koordinatları al
       const points = [];
       for (const s of pendingServices) {
-        const cachedKey = `geo_${s.customerAddress}`;
+        const cachedKey = \`geo_\${s.customerAddress}\`;
         const cached = localStorage.getItem(cachedKey);
         let coords = null;
         if (cached) {
@@ -107,45 +126,19 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
     }
   };
 
-  const handleOpenMaps = () => {
-    if (pendingServices.length === 0) return;
+  const handleOpenMaps = () => {`;
 
-    if (pendingServices.length === 1) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pendingServices[0].customerAddress)}&travelmode=driving`;
-      window.open(url, '_blank');
-      return;
-    }
+content = content.replace(target2, rep2);
 
-    const destination = pendingServices[pendingServices.length - 1].customerAddress;
-    const waypoints = pendingServices.slice(0, -1).map(s => s.customerAddress);
+const target3 = `        <button 
+          onClick={handleOpenMaps}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+        >
+          <Navigation size={16} />
+          Haritalarda Aç
+        </button>`;
 
-    let url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
-    
-    if (waypoints.length > 0) {
-      // route optimization is a Google Maps feature when using waypoints
-      url += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`;
-    }
-
-    window.open(url, '_blank');
-  };
-
-  if (pendingServices.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mb-6">
-      <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-            <Map size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-800">Günün Rotası</h4>
-            <p className="text-xs text-slate-600 font-medium">Bekleyen {pendingServices.length} servis için rota ve süre tahmini alın.</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+const rep3 = `        <div className="flex items-center gap-2">
           <button 
             onClick={handleOptimizeRoute}
             disabled={isCalculating || pendingServices.length < 2}
@@ -161,10 +154,9 @@ export const RouteOptimizer: React.FC<RouteOptimizerProps> = ({ services, onRout
             <Navigation size={16} />
             Haritalarda Aç
           </button>
-        </div>
-      </div>
-      
-      <RouteMap services={pendingServices} />
-    </div>
-  );
-};
+        </div>`;
+
+content = content.replace(target3, rep3);
+
+fs.writeFileSync(file, content);
+console.log('RouteOptimizer patched');

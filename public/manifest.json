@@ -1,6 +1,6 @@
 {
-  "name": "MobilyaOps Servis Yönetimi",
-  "short_name": "MobilyaOps",
+  "name": "Sohvakeskus",
+  "short_name": "Sohvakeskus",
   "description": "İkinci el mobilya mağazası operasyon ve saha servis yönetim sistemi.",
   "start_url": "/",
   "display": "standalone",

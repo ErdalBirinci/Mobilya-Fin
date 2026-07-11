@@ -15,14 +15,17 @@ export const InventoryManager: React.FC = () => {
   const [newItem, setNewItem] = useState<Omit<InventoryItem, 'id' | 'tenantId'>>({
     name: '',
     quantity: 0,
-    status: 'Mevcut',
+    status: 'Vitrinde',
   });
 
   const [editItem, setEditItem] = useState<Partial<InventoryItem>>({});
+  const [statusFilter, setStatusFilter] = useState<InventoryStatus | 'Tümü'>('Tümü');
 
-  const filteredInventory = inventory.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInventory = inventory.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'Tümü' || item.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleAdd = () => {
     if (!newItem.name.trim()) return;
@@ -32,7 +35,7 @@ export const InventoryManager: React.FC = () => {
       status: newItem.status,
     });
     setIsAdding(false);
-    setNewItem({ name: '', quantity: 0, status: 'Mevcut' });
+    setNewItem({ name: '', quantity: 0, status: 'Vitrinde' });
   };
 
   const handleUpdate = () => {
@@ -75,6 +78,18 @@ export const InventoryManager: React.FC = () => {
               className="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm w-64 outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-4 py-2 bg-slate-100 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-700 cursor-pointer"
+          >
+            <option value="Tümü">Tüm Durumlar</option>
+            <option value="Vitrinde">Vitrinde</option>
+            <option value="Satıldı">Satıldı</option>
+            <option value="Rezerve">Rezerve</option>
+            <option value="Kamyonda">Kamyonda</option>
+            <option value="Teslim Edildi">Teslim Edildi</option>
+          </select>
           <button 
             onClick={handleExportCsv}
             className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-xl border border-indigo-100 font-semibold text-sm hover:bg-indigo-50 transition-colors shadow-sm"
@@ -98,7 +113,7 @@ export const InventoryManager: React.FC = () => {
           <div>
             <p className="text-emerald-700 font-semibold text-sm mb-1">Hazır (Depo)</p>
             <h3 className="text-3xl font-bold text-emerald-800">
-              {inventory.filter(i => i.status === 'Mevcut').reduce((acc, curr) => acc + curr.quantity, 0)}
+              {inventory.filter(i => i.status === 'Vitrinde').reduce((acc, curr) => acc + curr.quantity, 0)}
             </h3>
           </div>
           <div className="bg-emerald-200 p-3 rounded-xl text-emerald-700">
@@ -166,8 +181,8 @@ export const InventoryManager: React.FC = () => {
                     onChange={(e) => setNewItem({ ...newItem, status: e.target.value as InventoryStatus })}
                     className="bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
-                    <option value="Mevcut">Mevcut</option>
-                    <option value="Tükendi">Tükendi</option>
+                    <option value="Vitrinde">Vitrinde</option>
+                    <option value="Satıldı">Satıldı</option>
                     <option value="Rezerve">Rezerve</option>
                     <option value="Kamyonda">Kamyonda</option>
                     <option value="Teslim Edildi">Teslim Edildi</option>
@@ -210,12 +225,12 @@ export const InventoryManager: React.FC = () => {
                     </td>
                     <td className="px-6 py-3">
                       <select
-                        value={editItem.status || 'Mevcut'}
+                        value={editItem.status || 'Vitrinde'}
                         onChange={(e) => setEditItem({ ...editItem, status: e.target.value as InventoryStatus })}
                         className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                       >
-                        <option value="Mevcut">Mevcut</option>
-                        <option value="Tükendi">Tükendi</option>
+                        <option value="Vitrinde">Vitrinde</option>
+                        <option value="Satıldı">Satıldı</option>
                         <option value="Rezerve">Rezerve</option>
                         <option value="Kamyonda">Kamyonda</option>
                         <option value="Teslim Edildi">Teslim Edildi</option>
@@ -249,9 +264,9 @@ export const InventoryManager: React.FC = () => {
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold ${
-                        item.status === 'Mevcut'
+                        item.status === 'Vitrinde'
                           ? 'bg-emerald-100 text-emerald-700'
-                          : item.status === 'Tükendi'
+                          : item.status === 'Satıldı'
                           ? 'bg-red-100 text-red-700'
                           : item.status === 'Rezerve'
                           ? 'bg-amber-100 text-amber-700'

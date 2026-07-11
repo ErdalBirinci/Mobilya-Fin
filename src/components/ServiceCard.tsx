@@ -166,14 +166,36 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             {/* Müşteri Bilgileri */}
             <div className="mb-5">
               <div className="space-y-3 text-sm text-slate-600 font-medium">
-                <div className="flex items-center space-x-2">
-                  <Phone size={16} className="shrink-0 text-slate-400" />
-                  {isMasked ? (
-                    <span>{displayPhone}</span>
-                  ) : (
-                    <a href={`https://wa.me/${service.customerPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="hover:text-indigo-600 transition-colors">
-                      {displayPhone}
-                    </a>
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Phone size={16} className="shrink-0 text-slate-400" />
+                    {isMasked ? (
+                      <span>{displayPhone}</span>
+                    ) : (
+                      <span className="font-bold">{displayPhone}</span>
+                    )}
+                  </div>
+                  
+                  {/* Quick Action Buttons for Driver */}
+                  {!isMasked && currentUser.role === 'DRIVER' && (
+                    <div className="flex items-center gap-2 pl-6">
+                      <a 
+                        href={`tel:${service.customerPhone.replace(/[^0-9+]/g, '')}`} 
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors border border-blue-100 shadow-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Phone size={14} /> Müşteriyi Ara
+                      </a>
+                      <a 
+                        href={`https://wa.me/${service.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent("Merhaba, teslimat için yoldayız. Lütfen konumunuzu paylaşır mısınız?")}`}
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors border border-emerald-100 shadow-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MessageCircle size={14} /> Konum İste
+                      </a>
+                    </div>
                   )}
                 </div>
                 
@@ -230,28 +252,32 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             )}
 
             {/* Lojistik Hafızası - Saha Notu Girdisi */}
-            <div className="mb-5">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Saha ve Park Notu</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
+            <div className="mb-5 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+              <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                <AlertTriangle size={16} className="text-indigo-600" />
+                Saha Notları (Erişim, Bina, Park vb.)
+              </label>
+              <div className="flex flex-col gap-3">
+                <textarea
                   value={fieldNoteInput}
                   onChange={(e) => setFieldNoteInput(e.target.value)}
-                  placeholder="Örn: Kamyoneti arka sokağa park edin..."
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  placeholder="Sürücüler için teslimat adresindeki erişim zorluklarını veya bina detaylarını kaydedin... (Örn: Giriş arka sokaktan, 3. katta asansör yok vs.)"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[80px] resize-y"
                 />
-                <button
-                  onClick={handleSaveFieldNote}
-                  disabled={isSavingNote || fieldNoteInput === service.fieldNote}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors",
-                    isSavingNote ? "bg-emerald-500 text-white" : 
-                    fieldNoteInput !== service.fieldNote ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400"
-                  )}
-                >
-                  <Save size={16} />
-                  {isSavingNote ? 'Kaydedildi' : 'Kaydet'}
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveFieldNote}
+                    disabled={isSavingNote || fieldNoteInput === service.fieldNote}
+                    className={cn(
+                      "px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm",
+                      isSavingNote ? "bg-emerald-500 text-white" : 
+                      fieldNoteInput !== service.fieldNote ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400"
+                    )}
+                  >
+                    <Save size={16} />
+                    {isSavingNote ? 'Kaydedildi' : 'Notu Kaydet'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -294,27 +320,49 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
           {/* Aksiyonlar ve Durum */}
           <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <label className="text-sm font-bold text-slate-600 mr-4">Durumu Güncelle:</label>
-                <select
-                  value={service.status}
-                  onChange={handleStatusChange}
+            <div className="flex flex-col gap-3 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold text-slate-600 mr-2">Hızlı İşlem:</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onUpdateStatus(service.id, 'Yolda'); }}
+                  disabled={service.status === 'Yolda'}
                   className={cn(
-                    "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm",
-                    service.status === 'Planlandı' ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' :
-                    service.status === 'Yolda' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' :
-                    service.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200' :
-                    service.status === 'İptal Edildi' ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' :
-                    'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
+                    "px-4 py-2 text-sm font-bold rounded-lg border transition-colors shadow-sm",
+                    service.status === 'Yolda' 
+                      ? 'bg-indigo-600 text-white border-indigo-700' 
+                      : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
                   )}
                 >
-                  <option value="Planlandı">Planlandı</option>
-                  <option value="Yolda">Yolda</option>
-                  <option value="Tamamlandı">Tamamlandı</option>
-                  <option value="Ertelendi">Ertelendi</option>
-                  <option value="İptal Edildi">İptal Edildi</option>
-                </select>
+                  🚚 Yolda
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onUpdateStatus(service.id, 'Tamamlandı'); }}
+                  disabled={service.status === 'Tamamlandı'}
+                  className={cn(
+                    "px-4 py-2 text-sm font-bold rounded-lg border transition-colors shadow-sm",
+                    service.status === 'Tamamlandı' 
+                      ? 'bg-emerald-600 text-white border-emerald-700' 
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                  )}
+                >
+                  ✅ {isAlis ? 'Mobilya Teslim Alındı' : 'Teslim Edildi'}
+                </button>
+                
+                <div className="relative ml-auto">
+                  <select
+                    value={service.status}
+                    onChange={handleStatusChange}
+                    className={cn(
+                      "text-sm font-bold py-2 px-4 rounded-lg border outline-none appearance-none cursor-pointer transition-colors shadow-sm bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    )}
+                  >
+                    <option value="Planlandı">Planlandı</option>
+                    <option value="Ertelendi">Ertelendi</option>
+                    <option value="İptal Edildi">İptal Edildi</option>
+                    <option value="Yolda" disabled className="hidden">Yolda</option>
+                    <option value="Tamamlandı" disabled className="hidden">Tamamlandı</option>
+                  </select>
+                </div>
               </div>
               {onEdit && (
                 <button

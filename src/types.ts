@@ -1,6 +1,6 @@
 export type Role = 'ADMIN' | 'DRIVER';
 
-export type InventoryStatus = 'Mevcut' | 'Tükendi' | 'Rezerve' | 'Kamyonda' | 'Teslim Edildi';
+export type InventoryStatus = 'Vitrinde' | 'Satıldı' | 'Rezerve' | 'Kamyonda' | 'Teslim Edildi';
 
 export interface AuditLog {
   id: string;
@@ -62,4 +62,17 @@ export interface User {
   email: string;
   password?: string;
   role: Role;
+}
+
+export type NotificationType = 'INFO' | 'WARNING' | 'SUCCESS' | 'ERROR';
+
+export interface AppNotification {
+  id: string;
+  tenantId: string;
+  userId?: string; 
+  title: string;
+  message: string;
+  type: NotificationType;
+  read: boolean;
+  createdAt: string;
 }

@@ -31,11 +31,11 @@ export const Login: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-            M
+            S
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-          MobilyaOps'a Giriş Yapın
+          Sohvakeskus'a Giriş Yapın
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
           Operasyon ve Servis Yönetim Sistemi

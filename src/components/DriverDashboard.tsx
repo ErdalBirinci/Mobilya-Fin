@@ -93,18 +93,18 @@ export const DriverDashboard: React.FC = () => {
 
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => handleStatusUpdate('Rezerve')} // Using 'Rezerve' or 'Mevcut' - wait, the user said 'Kamyonda' or 'Teslim Edildi', let's just add those to the status in types if needed, but existing options are Mevcut, Tükendi, Rezerve. Wait, "Kamyonda" and "Teslim Edildi" might not be in InventoryStatus type. Let me check the type.
+                onClick={() => handleStatusUpdate('Kamyonda')} // Using 'Rezerve' or 'Vitrinde' - wait, the user said 'Kamyonda' or 'Teslim Edildi', let's just add those to the status in types if needed, but existing options are Mevcut, Tükendi, Rezerve. Wait, "Kamyonda" and "Teslim Edildi" might not be in InventoryStatus type. Let me check the type.
                 className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl flex items-center justify-center gap-2"
               >
                 <Truck size={18} />
-                Kamyonda (Rezerve)
+                Kamyonda
               </button>
               <button
-                onClick={() => handleStatusUpdate('Tükendi')}
+                onClick={() => handleStatusUpdate('Teslim Edildi')}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2"
               >
                 <CheckCircle size={18} />
-                Teslim Edildi (Tükendi)
+                Teslim Edildi
               </button>
               <button
                 onClick={() => setScannedItem(null)}
